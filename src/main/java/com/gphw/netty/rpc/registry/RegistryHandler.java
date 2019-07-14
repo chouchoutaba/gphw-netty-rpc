@@ -4,11 +4,7 @@ import com.gphw.netty.rpc.protocol.InvokerProtocol;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import java.io.File;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,53 +13,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RegistryHandler extends ChannelInboundHandlerAdapter {
 
+    //注册中心
+    private IRegistryCenter registryCenter=new RegistryCenterWithZk();
 
-    private static ConcurrentHashMap<String, Object> registryMap = new ConcurrentHashMap<String, Object>();
+    private  ConcurrentHashMap<String, Object> registryMap;
 
-    private List<String> classNames = new ArrayList<String>();
 
-    public RegistryHandler() {
-        scannerClass("com.gphw.netty.rpc.provider");
-        doRegistry();
-    }
-
-    /**
-     * 完成注册
-     */
-    private void doRegistry() {
-        if (classNames.size() == 0) {
-            return;
-        }
-        for (String className : classNames) {
-            try {
-                Class<?> clazz = Class.forName(className);
-                Class<?> i = clazz.getInterfaces()[0];
-                registryMap.put(i.getName(), clazz.newInstance());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * 递归扫描
-     *
-     * @param packageName
-     */
-    private void scannerClass(String packageName) {
-        URL url = this.getClass().getClassLoader().getResource(packageName.replaceAll("\\.", "/"));
-        File dir = new File(url.getFile());
-        for (File file : dir.listFiles()) {
-            if (file.isDirectory()) {
-                scannerClass(packageName + "." + file.getName());
-            } else {
-                classNames.add(packageName + "." + file.getName().replace(".class", "").trim());
-            }
-        }
+    public RegistryHandler(ConcurrentHashMap<String, Object> registryMap){
+        this.registryMap=registryMap;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+
         Object result = new Object();
         InvokerProtocol protocol = (InvokerProtocol) msg;
         String className = protocol.getClassName();
@@ -75,6 +37,7 @@ public class RegistryHandler extends ChannelInboundHandlerAdapter {
         channelHandlerContext.write(result);
         channelHandlerContext.flush();
         channelHandlerContext.close();
+        System.out.println("端口8088返回结果："+result);
     }
 
     @Override
@@ -82,4 +45,6 @@ public class RegistryHandler extends ChannelInboundHandlerAdapter {
         throwable.printStackTrace();
         channelHandlerContext.close();
     }
+
+
 }

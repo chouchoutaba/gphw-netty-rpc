@@ -1,5 +1,7 @@
 package com.gphw.netty.rpc.consumer.proxy;
 
+import com.gphw.netty.rpc.discovery.IServiceDiscovery;
+import com.gphw.netty.rpc.discovery.ServiceDiscoveryWithZk;
 import com.gphw.netty.rpc.protocol.InvokerProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -35,6 +37,7 @@ public class RpcProxy {
 
     private static class MethodProxy implements InvocationHandler {
         private Class<?> clazz;
+        private IServiceDiscovery serviceDiscovery=new ServiceDiscoveryWithZk();
         public MethodProxy(Class<?> clazz){
             this.clazz = clazz;
         }
@@ -62,6 +65,7 @@ public class RpcProxy {
          * @return
          */
         public Object rpcInvoke(Object proxy,Method method,Object[] args){
+
             int port = 8088;
             //传输协议封装
             InvokerProtocol msg = new InvokerProtocol();
@@ -69,6 +73,9 @@ public class RpcProxy {
             msg.setMethodName(method.getName());
             msg.setValues(args);
             msg.setParams(method.getParameterTypes());
+            //获得目标地址
+            String address=serviceDiscovery.discovery(clazz.getName());
+            String[] addresses=address.split(":");
 
             final RpcProxyHandler consumerHandler = new RpcProxyHandler();
             EventLoopGroup group = new NioEventLoopGroup();
@@ -100,7 +107,7 @@ public class RpcProxy {
                             }
                         });
 
-                ChannelFuture future = b.connect("localhost", port).sync();
+                ChannelFuture future = b.connect(addresses[0], Integer.parseInt(addresses[1])).sync();
                 future.channel().writeAndFlush(msg).sync();
                 future.channel().closeFuture().sync();
             } catch(Exception e){
