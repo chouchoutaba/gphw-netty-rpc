@@ -12,6 +12,7 @@ public class RpcConsumer {
     public static void main(String[] args) {
         IRpcCalCulateService service = null;
         try {
+            System.out.println("分支代码");
             service = RpcProxy.create(IRpcCalCulateService.class);
         } catch (Exception e) {
             e.printStackTrace();
