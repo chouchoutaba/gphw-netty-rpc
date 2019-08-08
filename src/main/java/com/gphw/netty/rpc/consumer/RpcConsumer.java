@@ -10,7 +10,6 @@ import com.gphw.netty.rpc.consumer.proxy.RpcProxy;
 public class RpcConsumer {
 
     public static void main(String[] args) {
-
         IRpcCalCulateService service = null;
         try {
             service = RpcProxy.create(IRpcCalCulateService.class);
